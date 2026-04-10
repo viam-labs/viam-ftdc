@@ -227,6 +227,8 @@ func replaceExplicit(
 
 		for idx, nowNumerator := range numerators {
 			if idx-windowSecs < 0 {
+				inp[idx].Readings = append(inp[idx].Readings,
+					ftdc.Reading{MetricName: graphName, Value: 0.0})
 				continue
 			}
 
@@ -268,6 +270,8 @@ func replaceImplicit(
 		logger.Infof("Metric: %v Denominators: %v", graphName, denominators)
 		for idx, nowNumerator := range numerators {
 			if idx-windowSecs < 0 {
+				inp[idx].Readings = append(inp[idx].Readings,
+					ftdc.Reading{MetricName: graphName, Value: 0.0})
 				continue
 			}
 
