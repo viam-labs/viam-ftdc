@@ -18,5 +18,12 @@
       "darwin/arm64",
       "windows/amd64"
     ]
-  }
+  },
+  "models": [
+    {
+      "api": "rdk:service:generic",
+      "model": "dan:ftdc:ftdc",
+      "markdown_link": "dan_ftdc_ftdc.md"
+    }
+  ]
 }
