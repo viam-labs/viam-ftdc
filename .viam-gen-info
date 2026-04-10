@@ -1,0 +1,13 @@
+{
+  "module_name": "ftdc",
+  "visibility": "public",
+  "namespace": "dan",
+  "language": "go",
+  "resource_type": "service",
+  "resource_subtype": "generic",
+  "model_name": "ftdc",
+  "initialize_git": false,
+  "generator_version": "0.1.0",
+  "generated_on": "2026-04-10T14:39:01.508767338Z",
+  "module_readme_link": "README.md"
+}
