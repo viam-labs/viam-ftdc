@@ -101,7 +101,7 @@ func (service *ftdcService) Name() resource.Name {
 }
 
 func (service *ftdcService) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[string]interface{}, error) {
-	if filters, exists := cmd["get-ftdc"]; exists {
+	if filters, exists := cmd["get_ftdc"]; exists {
 		return service.GetFTDC(filters)
 	}
 
