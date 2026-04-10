@@ -91,7 +91,7 @@ func NewFtdc(ctx context.Context, deps resource.Dependencies, name resource.Name
 		}
 		service.ftdcDir = filepath.Join(home, "diagnostics.data", part)
 	}
-	logger.Info("FTDCDir:", service.ftdcDir)
+	logger.Debug("FTDCDir:", service.ftdcDir)
 
 	return service, nil
 }
@@ -120,7 +120,7 @@ func (service *ftdcService) getDatums() ([]ftdc.FlatDatum, int64, error) {
 			return nil
 		}
 
-		service.logger.Info("Path:", path, "Timestamp:", info.ModTime())
+		service.logger.Debug("Path:", path, "Timestamp:", info.ModTime())
 		if !strings.HasSuffix(path, ".ftdc") {
 			return nil
 		}
@@ -175,6 +175,69 @@ func getInt64(inp any, defValue int64, logger logging.Logger) int64 {
 	}
 }
 
+func getReading(datum ftdc.FlatDatum, metricName string) ftdc.Reading {
+	for _, reading := range datum.Readings {
+		if strings.HasSuffix(reading.MetricName, metricName) {
+			return reading
+		}
+	}
+
+	return ftdc.Reading{}
+}
+
+func replaceExplicit(
+	inp []ftdc.FlatDatum, numeratorStr, denominatorStr, computedField string, windowSecs int, logger logging.Logger,
+) {
+	matchingNums := []string{}
+	matchingDens := []string{}
+	for _, reading := range inp[0].Readings {
+		if strings.HasSuffix(reading.MetricName, numeratorStr) {
+			matchingNums = append(matchingNums, reading.MetricName)
+		}
+
+		if strings.HasSuffix(reading.MetricName, denominatorStr) {
+			matchingDens = append(matchingDens, reading.MetricName)
+		}
+	}
+
+	if len(matchingNums) != len(matchingDens) {
+		logger.Warnf("Unmatched explicit numerators/denominators. Num: %v Den: %v Matched Nums: %v Matched Dens: %v",
+			numeratorStr, denominatorStr, matchingNums, matchingDens)
+		return
+	}
+
+	for idx, fqNumerator := range matchingNums {
+		fqDenominator := matchingDens[idx]
+
+		// `metricIdentifier` is expected to be of the form `rdk.foo_module.`. Leave the trailing
+		// dot as we would be about to re-add it.
+		metricIdentifier := strings.TrimSuffix(fqNumerator, numeratorStr)
+		// E.g: `rdk.foo_module.User CPU%'.
+		graphName := fmt.Sprint(metricIdentifier, computedField)
+
+		logger.Debugf("Zipping. FQNumerator: %v FQDenominator: %v GraphName: %v",
+			fqNumerator, fqDenominator, graphName)
+
+		numerators := make([]float32, len(inp))
+		denominators := make([]float32, len(inp))
+		for idx, datum := range inp {
+			numerators[idx] = getReading(datum, fqNumerator).Value
+			denominators[idx] = getReading(datum, fqDenominator).Value
+		}
+
+		for idx, nowNumerator := range numerators {
+			if idx-windowSecs < 0 {
+				continue
+			}
+
+			numerator := nowNumerator - numerators[idx-windowSecs]
+			denominator := denominators[idx] - denominators[idx-windowSecs]
+			inp[idx].Readings = append(inp[idx].Readings,
+				ftdc.Reading{MetricName: graphName, Value: numerator / denominator})
+		}
+	}
+}
+
 func (service *ftdcService) GetFTDC(filters any) (map[string]interface{}, error) {
 	var filtersMap map[string]any
 	var ok bool
@@ -195,6 +258,11 @@ func (service *ftdcService) GetFTDC(filters any) (map[string]interface{}, error)
 			ret = append(ret, datum)
 		}
 	}
+
+	windowSizeSecs := 3
+	replaceExplicit(ret, "UserCPUSecs", "ElapsedTimeSecs", "UserCPU", windowSizeSecs, service.logger)
+	replaceExplicit(ret, "SystemCPUSecs", "ElapsedTimeSecs", "SystemCPU", windowSizeSecs, service.logger)
+	// replaceImplicit(ret, "dataSentBytes", "DataSentBytesPerSec")
 
 	return map[string]any{
 		"datums": ret,
