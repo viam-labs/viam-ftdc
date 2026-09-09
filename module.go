@@ -106,7 +106,7 @@ func (service *ftdcService) DoCommand(ctx context.Context, cmd map[string]interf
 	}
 
 	keys := []string{}
-	for key, _ := range cmd {
+	for key := range cmd {
 		keys = append(keys, key)
 	}
 
