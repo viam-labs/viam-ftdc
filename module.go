@@ -2,7 +2,6 @@ package ftdc
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -17,8 +16,7 @@ import (
 )
 
 var (
-	Ftdc             = resource.NewModel("dan", "ftdc", "ftdc")
-	errUnimplemented = errors.New("unimplemented")
+	Ftdc = resource.NewModel("dan", "ftdc", "ftdc")
 )
 
 func init() {
@@ -110,7 +108,7 @@ func (service *ftdcService) DoCommand(ctx context.Context, cmd map[string]interf
 		keys = append(keys, key)
 	}
 
-	return nil, fmt.Errorf("Unknown DoCommand. Given keys: %v Available commands: `get-ftdc`", keys)
+	return nil, fmt.Errorf("unknown DoCommand. Given keys: %v Available commands: `get-ftdc`", keys)
 }
 
 func (service *ftdcService) getDatums() ([]ftdc.FlatDatum, int64, error) {
@@ -132,17 +130,17 @@ func (service *ftdcService) getDatums() ([]ftdc.FlatDatum, int64, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, 0, fmt.Errorf("Error walking ftdc directory. Err: %w", err)
+		return nil, 0, fmt.Errorf("error walking ftdc directory. Err: %w", err)
 	}
 
 	if mostRecentFtdcFile == nil {
-		return nil, 0, fmt.Errorf("No ftdc files found. Directory: %v", service.ftdcDir)
+		return nil, 0, fmt.Errorf("no ftdc files found. Directory: %v", service.ftdcDir)
 	}
 
 	absoluteFilepath := filepath.Join(service.ftdcDir, (*mostRecentFtdcFile).Name())
 	reader, err := os.Open(absoluteFilepath)
 	if err != nil {
-		return nil, 0, fmt.Errorf("Error opening ftdc file. File: %v Err: %w", absoluteFilepath, err)
+		return nil, 0, fmt.Errorf("error opening ftdc file. File: %v Err: %w", absoluteFilepath, err)
 	}
 
 	datums, lastTimestampNanos, err := ftdc.ParseWithLogger(reader, service.logger)
@@ -289,7 +287,7 @@ func (service *ftdcService) GetFTDC(filters any) (map[string]interface{}, error)
 	var filtersMap map[string]any
 	var ok bool
 	if filtersMap, ok = filters.(map[string]any); !ok {
-		return nil, fmt.Errorf("Filters is not a json map. Type: %T", filters)
+		return nil, fmt.Errorf("filters is not a json map. Type: %T", filters)
 	}
 
 	allDatums, lastTimestampNanos, err := service.getDatums()
