@@ -146,7 +146,7 @@ func (service *ftdcService) getDatums() ([]ftdc.FlatDatum, int64, error) {
 	datums, lastTimestampNanos, err := ftdc.ParseWithLogger(reader, service.logger)
 	if err != nil {
 		// We are reading a file that can be concurrently written to. Errors are expected.
-		service.logger.Infof("Error reading file. Num datums: %v LastTimestamp: %v Err:",
+		service.logger.Infof("Error reading file. Num datums: %v LastTimestamp: %v Err: %v",
 			len(datums), lastTimestampNanos, err)
 	}
 
@@ -168,7 +168,7 @@ func getInt64(inp any, defValue int64, logger logging.Logger) int64 {
 	case float64:
 		return int64(n)
 	default:
-		logger.Warn("Unexpected numeric input. Type: %T Val: %v", inp, inp)
+		logger.Warnf("Unexpected numeric input. Type: %T Val: %v", inp, inp)
 		return defValue
 	}
 }
